@@ -11,20 +11,18 @@ This repository contains an universal marker detection algorithm. The algorithm 
 The basic idea behind this algorithm is that, there are thousands of labeled images, which are used for detection training. Each sample set includes an image (.JPEG), an annotation file (.xml) recorded the type and bounding box of objects in the image. These labeled images are used as **raw data** for marker dataset. The original objects inside bounding boxes are replaced by the marker image. Moreover, these modified images are copied to various versions (transformed marker + various brightness). At the end, this dataset contains more than thousands of images for training.
 
 ### Contents
-1. [Requirements](#Part-1.-Requirements)
-2. [Faster R-CNN installation](#Part-2.-Faster-R-CNN-installation)
-3. [Marker detection: dataset](#Part 3. Marker detection: dataset)
-4. [Marker detection: training](#Part 4. Marker detection: training)
-5. [Marker detection: testing](#Part 5. Marker detection: testing)
-6. [Marker detection: application](#Part-6.-Marker-detection:-application)
-7. [Marker detection: experience / further modification](#Part 7. Marker detection: experience / further modification)
-8. [Error and solution](#error-and-solution)
+1. [Requirements](#part-1-requirements)
+2. [Faster R-CNN installation](#part-2-faster-r-cnn-installation)
+3. [Marker detection: dataset](#part-3-marker-detection-dataset)
+4. [Marker detection: training](#part-4-marker-detection-training)
+5. [Marker detection: testing](#part-5-marker-detection-testing)
+6. [Marker detection: application](#part-6-marker-detection-application)
+7. [Marker detection: experience / further modification](#part-7-marker-detection-experience-further-modification)
+8. [Error and solution](#part-8-error-and-solution)
 
 ### Part 1. Requirements
 
 For the marker detection algorithm introduced in this repo, ZF-net is adopted. For training smaller networks (ZF-Net), a good GPU (e.g., Titan, K20, K40, ...) with at least **3GB** of memory suffices. The installation of GPU is not included in this post. Therefore, suppose that you have completed the installation of GPU. 
-
-___
 
 ### Part 2. Faster R-CNN installation
 
@@ -80,11 +78,6 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
     ./tools/demo.py
     ```
 
-<br></br>
-
-___
-
-<a name = "Marker detection: dataset"></a>
 
 ### Part 3. Marker detection: dataset
 
@@ -253,12 +246,6 @@ For each image (Img):
 
 Again, the details of the operations can be refered to the source code.
 
-<br></br>
-
-___
-
-<a name = "Marker detection: training"></a>
-
 ### Part 4. Marker detection: training
 
 In this part, the training of marker detector will be introduced. Again, if you are just using it as a tool, you can just follow the code below and proceed to next part. After executing these commands, the program will start training of a marker detector. At the end of training, it is expected to have some well-trained models (since we will take snapshots of the model from time to time). However, we just need one of them. The final model should be good enough, assumed that it doesn't overfit the training set. Details can be refer to Part 7.
@@ -277,11 +264,6 @@ At the end , you will get some trained models at this directory, `$FRCN/output/m
 
 Basically, we need to prepare a prototxt (defining network structure), a prototxt defining hyper-paremeters (e.g. learning rate, learning policy), a configuration file (config.xml) and a pre-trained model (.caffemodel) for network parameter initialization. For the details of whole workflow of py-faster-rcnn, you may wish to visit my [Detection: Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post to know more details. The post includes the workflow behind py-faster-rcnn and an example of basketball detection. Actually the idea behind the example is similar to marker detection.
 
-<br></br>
-
-___
-
-<a name = "Marker detection: testing"></a>
 
 ### Part 5. Marker detection: testing
 
@@ -304,12 +286,6 @@ put images in demo diretory
 ./tools/marker_detection.py
 ```
 
-<br></br>
-
-___
-
-<a name = "Marker detection: application"></a>
-
 ### Part 6. Marker detection: application
 
 In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker if there exists.
@@ -319,12 +295,6 @@ setup network and model
 setup detection.py
 return values
 ```
-
-<br></br>
-
-___
-
-<a name = "Marker detection: experience / further modification"></a>
 
 ### Part 7. Marker detection: experience / further modification
 
@@ -377,12 +347,8 @@ Another possible observation is that, you have enlarged your dataset but you fou
 
 While using this program for applications, there is an important parameter in testing/real application. That is something called CONF_THRESH. It stands for confidence threshold. Simply speaking, it is a threshold to reject bounding boxes with probability less than it. However, sometimes our detector is able to detect marker but with lower probability (e.g. ~50%) due to environment conditions. In such cases, we may try to tune the CONF_THRESH to a lower value such that more positives are accepted. You may concern the false positive cases. From previous experience, the detector is quite robust to reject non-marker proposals, especially in clean image (e.g. a marker placed on a meadow). In other words, the detector only response to marker.
 
-<br></br>
 
-___
-
-
-### Error and solution
+### Part 8. Error and solution
 
 
 1. no easydict, cv2
