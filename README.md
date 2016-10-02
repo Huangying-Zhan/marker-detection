@@ -17,7 +17,7 @@ The basic idea behind this algorithm is that, there are thousands of labeled ima
 4. [Marker detection: training](#part-4-marker-detection-training)
 5. [Marker detection: testing](#part-5-marker-detection-testing)
 6. [Marker detection: application](#part-6-marker-detection-application)
-7. [Marker detection: experience / further modification](#part-7-marker-detection-experience-further-modification)
+7. [Marker detection: experience](#part-7-marker-detection-experience)
 8. [Error and solution](#part-8-error-and-solution)
 
 ### Part 1. Requirements
@@ -296,7 +296,7 @@ setup detection.py
 return values
 ```
 
-### Part 7. Marker detection: experience / further modification
+### Part 7. Marker detection: experience
 
 In this part, I would like to share some of my experience in this marker detection project. There are three areas I am going to discuss, including dataset construction, training, and evaluation.
 
