@@ -31,6 +31,18 @@ for year in ['2015']:
         name = 'coco_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: coco(split, year))
 
+from datasets.basketball import basketball
+basketball_devkit_path = './data/basketball'
+for split in ['train', 'val']:
+        name = '{}_{}'.format('basketball', split)
+        __sets[name] = (lambda split=split: basketball(split, basketball_devkit_path))
+
+from datasets.marker import marker
+marker_devkit_path = './data/marker'
+for split in ['train', 'val']:
+        name = '{}_{}'.format('marker', split)
+        __sets[name] = (lambda split=split: marker(split, marker_devkit_path))
+
 def get_imdb(name):
     """Get an imdb (image database) by name."""
     if not __sets.has_key(name):
@@ -40,3 +52,4 @@ def get_imdb(name):
 def list_imdbs():
     """List all registered imdbs."""
     return __sets.keys()
+
