@@ -153,7 +153,8 @@ if __name__ == '__main__':
         _, _= im_detect(net, im)
 
     # get directory of imagenet
-    test_dir = "./data/demo/indoor/"
+    current_dir = os.getcwd()
+    test_dir = current_dir + "/data/demo/indoor/"
     im_names = os.listdir(test_dir)
     for i in xrange(len(im_names)):
         im_names[i] = test_dir + im_names[i]
