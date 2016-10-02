@@ -32,7 +32,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
   ```
   # Make sure to clone with --recursive
-  git clone --recursive git@bitbucket.org:JZ3627/marker-detection.git
+  git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
   ```
 
 2. Lets call the directory as `$FRCN`. For the following parts, please change this `$FRCN` to your real directory.
