@@ -30,16 +30,16 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
 1. Clone the Faster R-CNN repo
 
-  ```
-  # Make sure to clone with --recursive
-  git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
-  ```
+    ```Shell
+    # Make sure to clone with --recursive
+    git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
+    ```
 
 2. Lets call the directory as `$FRCN`. For the following parts, please change this `$FRCN` to your real directory.
 
 3. Build the Cython modules
 
-    ```
+    ```Shell
     cd $FRCN/lib
     make
     ```
@@ -49,7 +49,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
     For this part, please refer to [Caffe official installation instruction](http://caffe.berkeleyvision.org/installation.html) or my post about [Caffe installation](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#Caffe%20installation). 
 	If you have experience with Caffe or installed Caffe previously, just follow the instruction below.
     
-    ```
+    ```Shell
 	cd $FRCN/caffe-fast-rcnn
     cp Makefile.config.example Makefile.config
     
@@ -65,7 +65,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
     
 5. Download pre-computed Faster R-CNN models
 
-	```
+	```Shell
     cd $FRCN
 	./data/scripts/fetch_faster_rcnn_models.sh
     ```
@@ -74,7 +74,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
 	However, in this part you might get into trouble with different errors, such as without some packages. At the end of this post, some encountered errors and solution are provided. For those unexpected error, google the error and you should be able to find a solution.
     
-	```
+	```Shell
     ./tools/demo.py
     ```
 
@@ -84,7 +84,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 #### 3.1. Raw dataset
 As mentioned at the begining, we need a raw dataset to construct a new and larger marker detection dataset. The link for the dataset is [here](https://www.dropbox.com/s/3x2u785ys2eqv3l/marker_raw_data.tar.gz?dl=0).
 
-```
+```Shell
 # copy the dataset to correct directory
 cp marker_raw_data.tar.gz  $FRCN/data/marker/
 tar xzf marker_raw_data.tar.gz
@@ -105,7 +105,7 @@ Now, you have to prepare your marker image. Actually, this program supports mult
 
 ![img](marker image example)
 
-```
+```Shell
 # Suppose the image is called "marker_0.png"
 cp marker_0.png $FRCN/data/marker/marker_img/
 ```
@@ -118,7 +118,7 @@ Now, we can build our marker dataset based on the raw dataset downloaded in Part
 
 ![img](duplicate example, 1 to 5 to modified 5)
 
-```
+```Shell
 cd $FRCN
 
 # construct marker dataset (default: repeatly copy raw data for 5 times)
@@ -250,7 +250,7 @@ Again, the details of the operations can be refered to the source code.
 
 In this part, the training of marker detector will be introduced. Again, if you are just using it as a tool, you can just follow the code below and proceed to next part. After executing these commands, the program will start training of a marker detector. At the end of training, it is expected to have some well-trained models (since we will take snapshots of the model from time to time). However, we just need one of them. The final model should be good enough, assumed that it doesn't overfit the training set. Details can be refer to Part 7.
 
-```
+```Shell
 cd $FRCN
 
 # A part of this bash script is hardcoded. There will be potential problems after modifying the file, models/marker/train.prototxt 
@@ -274,16 +274,17 @@ In here, we will introduce two testing methods. First one is using validation se
 #### 5.1. Validation set
 
 Run the following command to check the performance.
-```
+
+```Shell
 # Suppose your trained model from Part 4 is called zf_faster_rcnn_marker_iter_50000.caffemodel
 ./tools/test.py --gpu 0 --def models/marker/test.prototxt　--net output/marker/train/zf_faster_rcnn_marker_iter_50000.caffemodel --imdb marker_val cfgexperiments/cfgs/config.yml
 ```
 
 #### 5.2. Test images
 
-```
-put images in demo diretory
-./tools/marker_detection.py
+```Shell
+# put images in demo diretory
+./tools/marker_demo.py
 ```
 
 ### Part 6. Marker detection: application
@@ -294,6 +295,44 @@ In this part, we will see how to use a trained model for marker detection in app
 setup network and model
 setup detection.py
 return values
+```
+
+
+Suppose you have installed ROS
+
+```Shell
+# Create a ROS workspace
+cd $FRCN
+mkdir -p catkin_ws/src
+cd catkin_ws/src
+catkin_init_workspace
+cd ..
+catkin_make
+source devel/setup.bash
+
+# Create a ROS package
+cd src/
+catkin_create_pkg marker_detection std_msgs rospy cv_bridge
+cd ..
+catkin_make
+. ./devel/setup.sh
+
+# Update package.xml, refer to official guideline
+cd ..
+catkin_make
+. devel/setup.sh
+
+# Create new message
+roscd marker_detection
+mkdir msg
+echo -e "bool marker_detected\nfloat32[] prob\nint32[] bbox" > msg/marker_detection_result.msg
+
+# Prepare publisher
+roscd marker_detection
+cp -r $FRCN/tools/my_tools/ros_scripts/ ./scripts/
+
+# Update number of CLASSES in 
+
 ```
 
 ### Part 7. Marker detection: experience
@@ -353,7 +392,7 @@ While using this program for applications, there is an important parameter in te
 
 1. no easydict, cv2
 
-    ```
+    ```Shell
     # Without Anaconda
     sudo pip install easydict
     sudo apt-get install python-opencv
@@ -366,13 +405,15 @@ While using this program for applications, there is an important parameter in te
 
 2. libcudart.so.8.0: cannot open shared object file: No such file or directory
 	
-    	sudo ldconfig /usr/local/cuda/lib64
+    ```Shell
+    sudo ldconfig /usr/local/cuda/lib64
+    ```
 
 3. assertionError: Selective Search data is not found
 
 	Solution: install verydeep/easydict rather than auto/easydict
     
-    ```
+    ```Shell
     conda install -c verydeep easydict
     ```
 
@@ -380,7 +421,7 @@ While using this program for applications, there is an important parameter in te
 
 	Solution: add the following code block in imdb.py
     
-    ```
+    ```Python
     def append_flipped_images(self):
         num_images = self.num_images
         widths = self._get_widths()
@@ -398,7 +439,7 @@ While using this program for applications, there is an important parameter in te
 
 5. For ImageNet detection dataset, no need to minus *one* on coordinates
 
-	```
+	```Python
     # Load object bounding boxes into a data frame.
     for ix, obj in enumerate(objs):
         bbox = obj.find('bndbox')
