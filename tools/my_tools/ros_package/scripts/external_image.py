@@ -28,7 +28,7 @@ def talker():
     rospy.init_node('external_image', anonymous=True)
     rate = rospy.Rate(0.1) # 10hz
 
-    FRCN_root = os.getcwd()+ "/../../../../"
+    FRCN_root = os.getcwd()+ "/../"
     img_path = FRCN_root + "data/demo/indoor/test.png"
     while not rospy.is_shutdown():
         print "Reading image..."
