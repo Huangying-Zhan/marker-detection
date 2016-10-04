@@ -30,10 +30,10 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
 1. Clone the Faster R-CNN repo
 
-  ```
-  # Make sure to clone with --recursive
-  git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
-  ```
+    ```
+    # Make sure to clone with --recursive
+    git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
+    ```
 
 2. Lets call the directory as `$FRCN`. For the following parts, please change this `$FRCN` to your real directory.
 
@@ -294,6 +294,44 @@ In this part, we will see how to use a trained model for marker detection in app
 setup network and model
 setup detection.py
 return values
+```
+
+
+Suppose you have installed ROS
+
+```
+# Create a ROS workspace
+cd $FRCN
+mkdir -p catkin_ws/src
+cd catkin_ws/src
+catkin_init_workspace
+cd ..
+catkin_make
+source devel/setup.bash
+
+# Create a ROS package
+cd src/
+catkin_create_pkg marker_detection std_msgs rospy cv_bridge
+cd ..
+catkin_make
+. ./devel/setup.sh
+
+# Update package.xml, refer to official guideline
+cd ..
+catkin_make
+. devel/setup.sh
+
+# Create new message
+roscd marker_detection
+mkdir msg
+echo -e "bool marker_detected\nfloat32[] prob\nint32[] bbox" > msg/marker_detection_result.msg
+
+# Prepare publisher
+roscd marker_detection
+cp -r $FRCN/tools/my_tools/ros_scripts/ ./scripts/
+
+# Update number of CLASSES in 
+
 ```
 
 ### Part 7. Marker detection: experience
