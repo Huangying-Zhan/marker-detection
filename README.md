@@ -1,4 +1,4 @@
-### Summary
+2### Summary
 
 To be completed
 5.2
@@ -38,9 +38,12 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 2. Lets call the directory as `$FRCN`. For the following parts, please change this `$FRCN` to your real directory.
 
 3. Build the Cython modules
-
+	
+    If it appears "No module named Cython.Distuils", it is recommended that you should install Anaconda first. Please refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title6).
+    
     ```Shell
     cd $FRCN/lib
+    # If you are running this program without GPU or CUDA, you should modify setup.py before make. Please refer to Part 8.
     make
     ```
     
@@ -260,8 +263,28 @@ cd $FRCN
 ./experiments/scripts/marker_detection.sh 0 50000
 ```
 
-At the end , you will get some trained models at this directory, `$FRCN/output/marker/`. We just need one of them, let's use the final one. Now you can jump to Part 5 if you don't need to know more about the training.
+At the end , you will get some trained models at this directory, `$FRCN/output/marker/`. We just need one of them, let's use the final one. Now you can jump to Part 5 if you don't need to know more about the training. However, if the ultimate goal for your project is to implement the algorithm in CPU mode (without GPU), there is a trick to improve the detection speed. The trick is to reduce image size in testing/implementation phase. However, this will reduce your detection performance (precision). The reason is that you train the model with large images while testing with relatively small images. To improve the performance, we can train the network model with small images. The trick is to modify `$FRCN/lib/fast_rcnn/config.py`. Besides image size, we can also alter the number of bounding boxes after applying non-maxima suppression to RPN proposals. When number of proposals is reduced, the detection speed is also improved.
 
+```Python
+# Change the scale of image
+# For training phase,
+__C.TRAIN.SCALES = (600,)
+__C.TRAIN.MAX_SIZE = 1000
+# These two values limit the minimum size of an image's shortest side and longest side's maximum size. 
+# The suggested values for this marker detection algorithm are,
+__C.TRAIN.SCALES = (200,)
+__C.TRAIN.MAX_SIZE = 400
+# However, we should also update the scale in training phase.
+__C.TEST.SCALES = (200,)
+__C.TEST.MAX_SIZE = 400
+
+
+# Reduce number of bounding boxes in testing phase
+# This value indicates the number of proposals you are going to classify as marker or not at the end. The less the faster.
+__C.TEST.RPN_POST_NMS_TOP_N = 300
+```
+
+If you wish to know more about training in Caffe, here provides more details.
 Basically, we need to prepare a prototxt (defining network structure), a prototxt defining hyper-paremeters (e.g. learning rate, learning policy), a configuration file (config.xml) and a pre-trained model (.caffemodel) for network parameter initialization. For the details of whole workflow of py-faster-rcnn, you may wish to visit my [Detection: Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post to know more details. The post includes the workflow behind py-faster-rcnn and an example of basketball detection. Actually the idea behind the example is similar to marker detection.
 
 
@@ -312,26 +335,28 @@ source devel/setup.bash
 
 # Create a ROS package
 cd src/
-catkin_create_pkg marker_detection std_msgs rospy cv_bridge
+catkin_create_pkg marker_detection std_msgs rospy cv_bridge sensor_msgs message_generation
 cd ..
 catkin_make
 . ./devel/setup.sh
 
-# Update package.xml, refer to official guideline
-cd ..
-catkin_make
-. devel/setup.sh
+# Update package.xml and CMakeLists.txt
+cd src/marker_detection
+cp $FRCN/tools/my_tools/ros_package/CMakeLists.txt ./
+cp $FRCN/tools/my_tools/ros_package/package.xml ./
 
 # Create new message
 roscd marker_detection
 mkdir msg
-echo -e "bool marker_detected\nfloat32[] prob\nint32[] bbox" > msg/marker_detection_result.msg
+echo -e "int32[4] bbox" > msg/bbox.msg
+echo -e "bool marker_detected\nfloat32[] prob\nbbox[] bboxes" > msg/marker_detection_result.msg
 
 # Prepare publisher
 roscd marker_detection
 cp -r $FRCN/tools/my_tools/ros_scripts/ ./scripts/
 
-# Update number of CLASSES in 
+# Update number of CLASSES
+# Follow official guideline to create new messeage
 
 ```
 
@@ -406,7 +431,10 @@ While using this program for applications, there is an important parameter in te
 2. libcudart.so.8.0: cannot open shared object file: No such file or directory
 	
     ```Shell
+    export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64:$LD_LIBRARY_PATH 
+    # if export doesn't work, then
     sudo ldconfig /usr/local/cuda/lib64
+    
     ```
 
 3. assertionError: Selective Search data is not found
@@ -450,3 +478,49 @@ While using this program for applications, there is an important parameter in te
         y2 = float(bbox.find('ymax').text)
         cls = self._class_to_ind[obj.find('name').text.lower().strip()]
 	```
+    
+6. No module named Cython.Distuils
+	
+    Install Anaconda can solve problem
+
+7. EnvironmentError: The nvcc binary could not be located in your $PATH.
+
+	This error is caused by lack of CUDA. If you have GPU device, you may wish to install CUDA first (refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title4)). Othervise, you should annotate the code related to GPU in `$FRCN/lib/setup.py`.
+    
+    ```
+    ...
+    #CUDA = locate_cuda()
+    ...
+    ...
+    #self.set_executable('compiler_so', CUDA['nvcc'])
+    ...
+    ...
+    #Extension('nms.gpu_nms',
+    # ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
+    # library_dirs=[CUDA['lib64']],
+    # libraries=['cudart'],
+    # language='c++',
+    # runtime_library_dirs=[CUDA['lib64']],
+    # # this syntax is specific to this build system
+    # # we're only going to use certain compiler args with nvcc and not with
+    # # gcc the implementation of this trick is in customize_compiler() below
+    # extra_compile_args={'gcc': ["-Wno-unused-function"],
+    # 'nvcc': ['-arch=sm_35',
+    # '--ptxas-options=-v',
+    # '-c',
+    # '--compiler-options',
+    # "'-fPIC'"]},
+    # include_dirs = [numpy_include, CUDA['include']]
+    # )
+    ```
+
+8. No module named gpu_nms
+
+	```Python
+    # $FRCN/lib/faster_rcnn/config.py
+    __C.USE_GPU_NMS = True -> __C.USE_GPU_NMS = False
+    # $FRCN/tools/test_net.py
+    caffe.set_mode_gpu() -> caffe.set_mode_cpu()
+    # $FRCN/lib/setup.py
+    nms extension
+    ```
