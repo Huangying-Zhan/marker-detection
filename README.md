@@ -30,7 +30,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
 1. Clone the Faster R-CNN repo
 
-    ```
+    ```git
     # Make sure to clone with --recursive
     git clone --recursive https://github.com/Huangying-Zhan/marker-detection.git
     ```
