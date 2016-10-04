@@ -353,10 +353,19 @@ echo -e "bool marker_detected\nfloat32[] prob\nbbox[] bboxes" > msg/marker_detec
 
 # Prepare publisher
 roscd marker_detection
-cp -r $FRCN/tools/my_tools/ros_scripts/ ./scripts/
+cp -r $FRCN/tools/my_tools/ros_package/scripts/ ./scripts/
 
-# Update number of CLASSES
-# Follow official guideline to create new messeage
+# Update number of CLASSES at scripts/marker_detection_ros.py
+# make
+cd $FRCN/catkin_ws
+catkin_make
+catkin_make install
+
+# Run ROS
+cd $FRCN/catkin_ws
+roscore
+# Open a new terminal
+source devel/setup.bash
 
 ```
 
@@ -523,4 +532,16 @@ While using this program for applications, there is an important parameter in te
     caffe.set_mode_gpu() -> caffe.set_mode_cpu()
     # $FRCN/lib/setup.py
     nms extension
+    ```
+    
+9. No module named em
+	
+		pip install empy
+
+10. No module named rospkg
+
+	```
+    git clone git://github.com/ros/rospkg.git 
+    cd rospkg
+    python setup.py install --user
     ```
