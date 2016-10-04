@@ -18,6 +18,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
+import os.path as osp
 # ==================== image subscriber ==========================
 # Instantiate CvBridge
 bridge = CvBridge()
@@ -26,7 +27,9 @@ def talker():
     pub = rospy.Publisher('marker_detection_image', Image, queue_size=10)
     rospy.init_node('external_image', anonymous=True)
     rate = rospy.Rate(0.1) # 10hz
-    img_path = "/home/shupeng/deepLearning/marker-detection/data/demo/indoor/test.png"
+
+    FRCN_root = osp.getcwd()+ "/../"
+    img_path = FRCN_root + "/data/demo/indoor/test.png"
     while not rospy.is_shutdown():
         print "Reading image..."
         cv_image = cv2.imread(img_path)
