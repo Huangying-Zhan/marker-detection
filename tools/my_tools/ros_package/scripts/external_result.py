@@ -24,6 +24,7 @@ init_path()
 import numpy as np
 import rospy
 from marker_detection.msg import marker_detection_result as md_result
+from marker_detection.msg import bbox as bbox
 
 # ====================== result publisher =================
 def result_callback(msg):
@@ -32,8 +33,8 @@ def result_callback(msg):
     marker_detected = msg.marker_detected
     if marker_detected:
         prob = msg.prob
-        bbox = msg.bbox
-        print bbox
+        bboxes = msg.bboxes
+        print bboxes[0].bbox
 
 if __name__ == '__main__':
     # Setup ROS
