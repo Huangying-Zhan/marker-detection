@@ -18,7 +18,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
-import os.path as osp
+import os
 # ==================== image subscriber ==========================
 # Instantiate CvBridge
 bridge = CvBridge()
@@ -28,7 +28,7 @@ def talker():
     rospy.init_node('external_image', anonymous=True)
     rate = rospy.Rate(0.1) # 10hz
 
-    FRCN_root = osp.getcwd()+ "/../"
+    FRCN_root = os.getcwd()+ "/../"
     img_path = FRCN_root + "/data/demo/indoor/test.png"
     while not rospy.is_shutdown():
         print "Reading image..."
