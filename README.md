@@ -366,6 +366,15 @@ cd $FRCN/catkin_ws
 roscore
 # Open a new terminal
 source devel/setup.bash
+rosrun marker_detection marker_detection_ros.py
+
+# For debugging, an external image publisher and result subscriber is implemented
+# Open a new terminal
+source devel/setup.bash
+rosrun marker_detection external_image.py
+# Open a new terminal
+source devel/setup.bash
+rosrun marker_detection external_result.py
 
 ```
 
@@ -545,3 +554,7 @@ While using this program for applications, there is an important parameter in te
     cd rospkg
     python setup.py install --user
     ```
+    
+11. ImprotError: libglog.so.0: cannot open shared object file: No such file or directory
+
+		export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
