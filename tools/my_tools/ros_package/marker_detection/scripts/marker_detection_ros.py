@@ -175,7 +175,11 @@ if __name__ == '__main__':
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
 
     prototxt = FRCN_root + "models/marker/test.prototxt"
-    caffemodel = FRCN_root + "output/marker/train/zf_faster_rcnn_marker_iter_50000.caffemodel"
+    caffemodel_at_ros = os.listdir(FRCN_root+ "output/marker/train/ros/")
+    if len(caffemodel_at_ros) == 1:
+        caffemodel = FRCN_root + "output/marker/train/ros/" + caffemodel_at_ros[0]
+    else: 
+        print "Unable to read caffemodel. Is there only ONE caffemodel saved at $FRCN/output/marker/train/ros/ ?"
 
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.').format(caffemodel))
