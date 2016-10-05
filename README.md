@@ -317,7 +317,7 @@ In this part, we will see how to use a trained model for marker detection in app
 Suppose you have installed ROS and trained a model for marker detection.
 Put the model at `$FRCN/output/marker/train/ros/`.
 
-***CPU issue!***
+***CPU mode issue!***
 
 ```Shell
 # Suppose you are going to create a new ROS workspace for this marker detection. 
