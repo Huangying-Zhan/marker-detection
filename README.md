@@ -10,23 +10,36 @@ This repository contains an universal marker detection algorithm. The algorithm 
 
 The basic idea behind this algorithm is that, there are thousands of labeled images, which are used for detection training. Each sample set includes an image (.JPEG), an annotation file (.xml) recorded the type and bounding box of objects in the image. These labeled images are used as **raw data** for marker dataset. The original objects inside bounding boxes are replaced by the marker image. Moreover, these modified images are copied to various versions (transformed marker + various brightness). At the end, this dataset contains more than thousands of images for training.
 
+In the following instruction, it includes the guideline for **training and testing in GPU mode**, application in ROS framework, my experience with various issues, and errors that may be encountered and the corresponding solution. Please note that, if you train a model in computer A (**GPU mode**) but run the application in computer B (**CPU mode**), you may refer to Part 7 if there is a reminder as this one: ***CPU mode issue!***. The general procedure for this case is as following.
+
+Computer A:
+1. Install the program (Part 2)
+2. Prepare training dataset (Part 3)
+3. Training and testing (Part 4,5)
+
+Computer B
+1. Install the program (Part 2, 7)
+2. Copy the trained model from Computer A to Computer B
+3. Application with ROS (Part 6)
+
 ### Contents
 1. [Requirements](#part-1-requirements)
 2. [Faster R-CNN installation](#part-2-faster-r-cnn-installation)
 3. [Marker detection: dataset](#part-3-marker-detection-dataset)
 4. [Marker detection: training](#part-4-marker-detection-training)
 5. [Marker detection: testing](#part-5-marker-detection-testing)
-6. [Marker detection: application](#part-6-marker-detection-application)
-7. [Marker detection: experience](#part-7-marker-detection-experience)
-8. [Error and solution](#part-8-error-and-solution)
+6. [Marker detection: application with ROS](#part-6-marker-detection-application-with-ros)
+7. [Marker detection: CPU mode issues](#part-7-marker-detection-cpu-mode-issues)
+8. [Marker detection: experience](#part-8-marker-detection-experience)
+9. [Error and solution](#part-9-error-and-solution)
 
 ### Part 1. Requirements
 
-For the marker detection algorithm introduced in this repo, ZF-net is adopted. For training smaller networks (ZF-Net), a good GPU (e.g., Titan, K20, K40, ...) with at least **3GB** of memory suffices. The installation of GPU is not included in this post. Therefore, suppose that you have completed the installation of GPU. 
+For the marker detection algorithm introduced in this repo, ZF-net is adopted. For **training** smaller networks (ZF-Net), a good GPU (e.g., Titan, K20, K40, ...) with at least **3GB** of memory suffices. The installation of GPU is not included in this post. Therefore, suppose that you have completed the installation of GPU. However, a good GPU is not required in testing/application phase. In other words, if you are going to use the trained model in CPU mode, it is still possible, given that there is enough memory.
 
 ### Part 2. Faster R-CNN installation
 
-For the details of Faster R-CNN installation, you may wish to visit my [Caffe installation](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#Caffe%20installation) post and [Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post. If they are not easy to read, you may also wish to visit the [official instruction](https://github.com/rbgirshick/py-faster-rcnn). In the following parts, I will always refer to my posts for simplicity. 
+For the details of Faster R-CNN installation, you may wish to visit my [Caffe installation](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#Caffe%20installation) post and [Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post. If they are not easy to read, you may also wish to visit the [official instruction](https://github.com/rbgirshick/py-faster-rcnn). In the following parts, I will always refer to my posts for simplicity.
 
 1. Clone the Faster R-CNN repo
 
@@ -39,33 +52,34 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 
 3. Build the Cython modules
 	
-    If it appears "No module named Cython.Distuils", it is recommended that you should install Anaconda first. Please refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title6).
-    
+    ***CPU mode issue!***
+
     ```Shell
     cd $FRCN/lib
-    # If you are running this program without GPU or CUDA, you should modify setup.py before make. Please refer to Part 8.
     make
     ```
-    
+
 4. Build Caffe and PyCaffe
-	
+
     For this part, please refer to [Caffe official installation instruction](http://caffe.berkeleyvision.org/installation.html) or my post about [Caffe installation](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#Caffe%20installation). 
 	If you have experience with Caffe or installed Caffe previously, just follow the instruction below.
     
+    ***CPU mode issue!***
+
     ```Shell
 	cd $FRCN/caffe-fast-rcnn
     cp Makefile.config.example Makefile.config
-    
-    # Modify Makefile.config, uncommment this line
+
+    # Modify Makefile.config, UNCOMMMENT this line
     WITH_PYTHON_LAYER := 1
-    # Modifiy Makefile.config according to your need, such as setup related to GPU support, cuDNN, CUDA version, Anaconda, OpenCV, etc.
-    
+    # Modifiy Makefile.config according to your need, such as setup related to CPU mode, CUDA version, Anaconda, OpenCV, etc. Basically is to update or enable the functions.
+
     # After modification on Makefile.config
     make -j4 # 4 is the number of core in your CPU, change it according to your computer CPU  
     # Suppose you have installed prerequites for PyCaffe, otherwise, go back to the Caffe installation instructions.
     make pycaffe -j4
     ```
-    
+
 5. Download pre-computed Faster R-CNN models
 
 	```Shell
@@ -113,7 +127,7 @@ Now, you have to prepare your marker image. Actually, this program supports mult
 cp marker_0.png $FRCN/data/marker/marker_img/
 ```
 
-Make sure you **don't put irrelevant files in the folder**!
+Make sure you **don't put irrelevant files in the folder**! The program automatically trace the files in the folder to build marker dataset later on.
 
 #### 3.3. Marker dataset
 
@@ -156,7 +170,7 @@ Suppose there are **2** images in the raw dataset. Basically, we need to copy th
         |-- img_1_marker_1_1.JPEG
 ```
 
-Keep in mind that, `img_0_*.JPEG` are totally the same while `img_0_*.JPEG` are same at this stage. Besides the image files, we also need to construct an annotation file for each new image. The idea is simple, read in the original *.xml*　file and then modify the original file to have new annotation files.
+Keep in mind that, `img_0_*.JPEG` are totally the same while `img_0_*.JPEG` are the same at this stage. Besides the image files, we also need to construct an annotation file for each new image. The idea is simple: read the original *.xml*　file and then modify the original file to have new annotation files.
 
 ```
 |-- raw_dataset
@@ -253,36 +267,19 @@ Again, the details of the operations can be refered to the source code.
 
 In this part, the training of marker detector will be introduced. Again, if you are just using it as a tool, you can just follow the code below and proceed to next part. After executing these commands, the program will start training of a marker detector. At the end of training, it is expected to have some well-trained models (since we will take snapshots of the model from time to time). However, we just need one of them. The final model should be good enough, assumed that it doesn't overfit the training set. Details can be refer to Part 7.
 
+***CPU mode issue!***
+
 ```Shell
 cd $FRCN
 
-# A part of this bash script is hardcoded. There will be potential problems after modifying the file, models/marker/train.prototxt 
+# A part of this bash script is hardcoded. There will be potential problems after modifying the files,train.prototxt, train_init.prototxt and test.prototxt at $FRCN/models/marker/
 # Usage:
 # ./experiments/scripts/marker_detection.sh [GPU_ID] [Training_Iteration]
 # For GPU_ID, you may check by this command: nvidia-smi. Normally it is 0.
 ./experiments/scripts/marker_detection.sh 0 50000
 ```
 
-At the end , you will get some trained models at this directory, `$FRCN/output/marker/`. We just need one of them, let's use the final one. Now you can jump to Part 5 if you don't need to know more about the training. However, if the ultimate goal for your project is to implement the algorithm in CPU mode (without GPU), there is a trick to improve the detection speed. The trick is to reduce image size in testing/implementation phase. However, this will reduce your detection performance (precision). The reason is that you train the model with large images while testing with relatively small images. To improve the performance, we can train the network model with small images. The trick is to modify `$FRCN/lib/fast_rcnn/config.py`. Besides image size, we can also alter the number of bounding boxes after applying non-maxima suppression to RPN proposals. When number of proposals is reduced, the detection speed is also improved.
-
-```Python
-# Change the scale of image
-# For training phase,
-__C.TRAIN.SCALES = (600,)
-__C.TRAIN.MAX_SIZE = 1000
-# These two values limit the minimum size of an image's shortest side and longest side's maximum size. 
-# The suggested values for this marker detection algorithm are,
-__C.TRAIN.SCALES = (200,)
-__C.TRAIN.MAX_SIZE = 400
-# However, we should also update the scale in training phase.
-__C.TEST.SCALES = (200,)
-__C.TEST.MAX_SIZE = 400
-
-
-# Reduce number of bounding boxes in testing phase
-# This value indicates the number of proposals you are going to classify as marker or not at the end. The less the faster.
-__C.TEST.RPN_POST_NMS_TOP_N = 300
-```
+At the end , you will get some trained models at this directory, `$FRCN/output/marker/`. We just need one of them, let's use the final one. Now you can jump to Part 5 if you don't need to know more about the training. 
 
 If you wish to know more about training in Caffe, here provides more details.
 Basically, we need to prepare a prototxt (defining network structure), a prototxt defining hyper-paremeters (e.g. learning rate, learning policy), a configuration file (config.xml) and a pre-trained model (.caffemodel) for network parameter initialization. For the details of whole workflow of py-faster-rcnn, you may wish to visit my [Detection: Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post to know more details. The post includes the workflow behind py-faster-rcnn and an example of basketball detection. Actually the idea behind the example is similar to marker detection.
@@ -305,84 +302,170 @@ Run the following command to check the performance.
 
 #### 5.2. Test images
 
+***CPU mode issue!***
+
 ```Shell
-# put images in demo diretory
+# Put test images in demo diretory at $FRCN/data/demo
+# Update the caffemodel path @line 118 @$FRCN/tools/marker_demo.py if necessary
 ./tools/marker_demo.py
 ```
 
 ### Part 6. Marker detection: application
 
-In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker if there exists.
+In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker in the image if there exists.
 
-```
-setup network and model
-setup detection.py
-return values
-```
+Suppose you have installed ROS and trained a model for marker detection.
+Put the model at `$FRCN/output/marker/train/ros/`.
 
-
-Suppose you have installed ROS
+***CPU issue!***
 
 ```Shell
-# Create a ROS workspace
+# Suppose you are going to create a new ROS workspace for this marker detection. 
+# Just run the following command. This will create a ROS workspace called catkin_ws. Lets call it $ROS_ws.
 cd $FRCN
-mkdir -p catkin_ws/src
-cd catkin_ws/src
-catkin_init_workspace
-cd ..
-catkin_make
-source devel/setup.bash
+./tools/my_tools/ros_package/ros.sh
 
-# Create a ROS package
-cd src/
-catkin_create_pkg marker_detection std_msgs rospy cv_bridge sensor_msgs message_generation
-cd ..
-catkin_make
-. ./devel/setup.sh
-
-# Update package.xml and CMakeLists.txt
-cd src/marker_detection
-cp $FRCN/tools/my_tools/ros_package/CMakeLists.txt ./
-cp $FRCN/tools/my_tools/ros_package/package.xml ./
-
-# Create new message
-roscd marker_detection
-mkdir msg
-echo -e "int32[4] bbox" > msg/bbox.msg
-echo -e "bool marker_detected\nfloat32[] prob\nbbox[] bboxes" > msg/marker_detection_result.msg
-
-# Prepare publisher
-roscd marker_detection
-cp -r $FRCN/tools/my_tools/ros_package/scripts/ ./scripts/
-
-# Update number of CLASSES at scripts/marker_detection_ros.py
-# make
-cd $FRCN/catkin_ws
+# If you have created a ROS workspace and you can just put marker detection ROS package in the workspace. 
+# Let's call the workspace as $ROS_ws
+cd $FRCN
+cp -r ./tools/my_tools/ros_package/marker_detection/ $ROS_ws/src/
+cd $ROS_ws
 catkin_make
 catkin_make install
 
 # Run ROS
 cd $FRCN/catkin_ws
 roscore
-# Open a new terminal
+
+# Open a new terminal and run marker detection ROS package
+# This ROS package read in an image and output detection result
 source devel/setup.bash
 rosrun marker_detection marker_detection_ros.py
 
-# For debugging, an external image publisher and result subscriber is implemented
+# For debugging, an external image publisher and result subscriber are also implemented.
 # Open a new terminal
 source devel/setup.bash
 rosrun marker_detection external_image.py
 # Open a new terminal
 source devel/setup.bash
 rosrun marker_detection external_result.py
-
 ```
 
-### Part 7. Marker detection: experience
+### Part 7. CPU mode issues
+
+##### Part 2.3. Build the Cython modules
+
+You may find `EnvironmentError: The nvcc binary could not be located in your $PATH` if CUDA is not installed well or GPU mode is not available in your computer.
+
+This error is caused by lack of CUDA. If you have an appropriate NVidia GPU device, you may wish to install CUDA first (refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title4)). Othervise, you should annotate the code related to GPU in `$FRCN/lib/setup.py`.
+
+```
+...
+#CUDA = locate_cuda()
+...
+...
+#self.set_executable('compiler_so', CUDA['nvcc'])
+...
+...
+#Extension('nms.gpu_nms',
+# ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
+# library_dirs=[CUDA['lib64']],
+# libraries=['cudart'],
+# language='c++',
+# runtime_library_dirs=[CUDA['lib64']],
+# # this syntax is specific to this build system
+# # we're only going to use certain compiler args with nvcc and not with
+# # gcc the implementation of this trick is in customize_compiler() below
+# extra_compile_args={'gcc': ["-Wno-unused-function"],
+# 'nvcc': ['-arch=sm_35',
+# '--ptxas-options=-v',
+# '-c',
+# '--compiler-options',
+# "'-fPIC'"]},
+# include_dirs = [numpy_include, CUDA['include']]
+# )
+```
+
+##### Part 2.4. Build Caffe and PyCaffe
+
+This part specifically focus on application phase in CPU mode. Suppose you have already trained a model for implementation. The following part focus on application phase in CPU mode.
+
+```Shell
+cd $FRCN/caffe-fast-rcnn
+cp Makefile.config.example Makefile.config
+
+# Modify Makefile.config
+# Enable python layers, uncomment this line
+WITH_PYTHON_LAYER := 1
+# Modifiy Makefile.config according to your need, such as setup related to CPU mode, CUDA version, Anaconda, OpenCV, etc.
+# Enable CPU mode, uncomment this line
+CPU_ONLY:=1
+# Enable Anaconda, uncomment the following lines. Update ANACONDA_HOME if necessary.
+ANACONDA_HOME := $(HOME)/anaconda 
+PYTHON_INCLUDE := $(ANACONDA_HOME)/include \
+		 $(ANACONDA_HOME)/include/python2.7 \
+		 $(ANACONDA_HOME)/lib/python2.7/site-packages/numpy/core/include \
+# After modification on Makefile.config
+make -j4 # 4 is the number of core in your CPU, change it according to your computer CPU  
+# Suppose you have installed prerequites for PyCaffe, otherwise, go back to the Caffe installation instructions.
+make pycaffe -j4
+```
+
+##### Part 4. Marker detection: training
+
+Basically, training is not operated in CPU mode. However, if the ultimate goal for your project is to implement the algorithm in a computer without GPU, there is a trick to improve the detection speed. The trick is to reduce image size in testing/implementation phase. However, this will reduce your detection performance (precision). The reason is that you train the model with large images while testing with relatively small images. To improve the performance, we can train the network model with small images. The trick is to modify `$FRCN/lib/fast_rcnn/config.py`. Besides image size, we can also alter the number of bounding boxes after applying non-maxima suppression to RPN proposals. When number of proposals is reduced, the detection speed is also improved.
+
+```Python
+# Change the scale of image
+# For training phase,
+__C.TRAIN.SCALES = (600,)
+__C.TRAIN.MAX_SIZE = 1000
+# These two values limit the minimum size of an image's shortest side and longest side's maximum size. 
+# The minimum suggested values for this marker detection algorithm in CPU mode is that,
+__C.TRAIN.SCALES = (200,)
+__C.TRAIN.MAX_SIZE = 400
+# However, we should also update the scale in testing phase.
+__C.TEST.SCALES = (200,)
+__C.TEST.MAX_SIZE = 400
+
+# Reduce number of bounding boxes in testing phase
+# This value indicates the number of proposals you are going to classify as marker or not at the end. The less the faster.
+__C.TEST.RPN_POST_NMS_TOP_N = 300
+```
+
+##### Part 5.2. Test images
+
+To run `$FRCN/tools/marker_demo.py` in CPU mode. We should use this command in order to enable CPU mode.
+
+```Shell
+./tools/marker_demo.py --cpu
+```
+
+
+##### Part 6. Marter detection: application with ROS
+
+If you have modified `$FRCN/lib/fast_rcnn/config.py` for smaller images, and this application with ROS is running in another computer different from the computer for training, you also need to update `$FRCN/lib/fast_rcnn/config.py` since the scripts in this part also call this `config.py`.
+
+```Python
+# Basically, you only need to update this part and make it as same as training setup.
+__C.TEST.SCALES = (200,)
+__C.TEST.MAX_SIZE = 400
+```
+
+Moreover, there are some files need to be updated to disable GPU related functions.
+
+```Python
+# $FRCN/lib/faster_rcnn/config.py
+__C.USE_GPU_NMS = True -> __C.USE_GPU_NMS = False
+# $FRCN/tools/test_net.py
+caffe.set_mode_gpu() -> caffe.set_mode_cpu()
+```
+
+### Part 8. Marker detection: experience
 
 In this part, I would like to share some of my experience in this marker detection project. There are three areas I am going to discuss, including dataset construction, training, and evaluation.
 
-#### 7.1. Dataset construction
+#### 8.1. Dataset construction
 
 Currently, this program is using an unified framework to construct dataset and training. The overal performance is pretty robust. However, this final framework is not completed at once. I did some experiments and finally came out with this framework. In the following paragraphs, I would like to share the experience and observation concerning this dataset construction. All are based on empirical experience. There is not yet any theorectical explanation. 
 
@@ -419,7 +502,7 @@ The first possible solution I came out is similar to marker image transformation
 Dataset size should be another important issue in this algorithm. Originally, I just used the raw dataset with around 3000 images for marker replacement and training. After marker image transformation and brightness enhancement. The performance is not that robust yet. I guessed that it might be caused by the size of dataset since we altered marker image with many random pre-processing. The dataset might not be capable to include most of the random pre-processing.
 Therefore, I enlarge the dataset by duplicating original dataset. Finally, this approach improves the performance.
 
-#### 7.2. Training and testing tricks
+#### 8.2. Training and testing tricks
 
 In this part, I would like to share some experience concerning test result observation. One of the drawback of this algorithm is that there is not **natural** validation dataset to evaluate the performance of the detector by a systematic and numerical way, given that you don't provide a manually labelled validation set. Therefore, basically the performance can be only evaluated by observation on some test images without annotation.
 
@@ -430,7 +513,7 @@ Another possible observation is that, you have enlarged your dataset but you fou
 While using this program for applications, there is an important parameter in testing/real application. That is something called CONF_THRESH. It stands for confidence threshold. Simply speaking, it is a threshold to reject bounding boxes with probability less than it. However, sometimes our detector is able to detect marker but with lower probability (e.g. ~50%) due to environment conditions. In such cases, we may try to tune the CONF_THRESH to a lower value such that more positives are accepted. You may concern the false positive cases. From previous experience, the detector is quite robust to reject non-marker proposals, especially in clean image (e.g. a marker placed on a meadow). In other words, the detector only response to marker.
 
 
-### Part 8. Error and solution
+### Part 9. Error and solution
 
 
 1. no easydict, cv2
@@ -449,10 +532,10 @@ While using this program for applications, there is an important parameter in te
 2. libcudart.so.8.0: cannot open shared object file: No such file or directory
 	
     ```Shell
-    export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64:$LD_LIBRARY_PATH 
-    # if export doesn't work, then
     sudo ldconfig /usr/local/cuda/lib64
-    
+    # if this doesn't work, then
+    export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64:$LD_LIBRARY_PATH 
+    # Permanent solution: add this export command to ~/.bashrc
     ```
 
 3. assertionError: Selective Search data is not found
@@ -500,37 +583,10 @@ While using this program for applications, there is an important parameter in te
 6. No module named Cython.Distuils
 	
     Install Anaconda can solve problem
+   
+7. No module named Cython.Distuils
 
-7. EnvironmentError: The nvcc binary could not be located in your $PATH.
-
-	This error is caused by lack of CUDA. If you have GPU device, you may wish to install CUDA first (refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title4)). Othervise, you should annotate the code related to GPU in `$FRCN/lib/setup.py`.
-    
-    ```
-    ...
-    #CUDA = locate_cuda()
-    ...
-    ...
-    #self.set_executable('compiler_so', CUDA['nvcc'])
-    ...
-    ...
-    #Extension('nms.gpu_nms',
-    # ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
-    # library_dirs=[CUDA['lib64']],
-    # libraries=['cudart'],
-    # language='c++',
-    # runtime_library_dirs=[CUDA['lib64']],
-    # # this syntax is specific to this build system
-    # # we're only going to use certain compiler args with nvcc and not with
-    # # gcc the implementation of this trick is in customize_compiler() below
-    # extra_compile_args={'gcc': ["-Wno-unused-function"],
-    # 'nvcc': ['-arch=sm_35',
-    # '--ptxas-options=-v',
-    # '-c',
-    # '--compiler-options',
-    # "'-fPIC'"]},
-    # include_dirs = [numpy_include, CUDA['include']]
-    # )
-    ```
+	If it appears "No module named Cython.Distuils", it is recommended that you should install Anaconda first. Please refer to [here](https://huangying-zhan.github.io/2016/09/09/GPU-and-Caffe-installation-in-Ubuntu.html#title6).
 
 8. No module named gpu_nms
 
@@ -539,8 +595,6 @@ While using this program for applications, there is an important parameter in te
     __C.USE_GPU_NMS = True -> __C.USE_GPU_NMS = False
     # $FRCN/tools/test_net.py
     caffe.set_mode_gpu() -> caffe.set_mode_cpu()
-    # $FRCN/lib/setup.py
-    nms extension
     ```
     
 9. No module named em
@@ -557,4 +611,8 @@ While using this program for applications, there is an important parameter in te
     
 11. ImprotError: libglog.so.0: cannot open shared object file: No such file or directory
 
-		export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    ```Shell
+    # Temporary solution
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    # Permanent solution: add this line to ~/.bashrc
+    ```
