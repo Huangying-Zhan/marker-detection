@@ -310,7 +310,7 @@ Run the following command to check the performance.
 ./tools/marker_demo.py
 ```
 
-### Part 6. Marker detection: application
+### Part 6. Marker detection: application with ROS
 
 In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker in the image if there exists.
 
@@ -351,7 +351,7 @@ source devel/setup.bash
 rosrun marker_detection external_result.py
 ```
 
-### Part 7. CPU mode issues
+### Part 7. Marker detection: CPU mode issues
 
 ##### Part 2.3. Build the Cython modules
 
