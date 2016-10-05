@@ -321,11 +321,14 @@ Put the model at `$FRCN/output/marker/train/ros/`.
 
 ```Shell
 # Suppose you are going to create a new ROS workspace for this marker detection. 
-# Just run the following command. This will create a ROS workspace called catkin_ws. Lets call it $ROS_ws.
+# Just run the following command. This will create a ROS workspace called catkin_ws. Jump to Option 1.
+# However,if you have already created a ROS workspace and you can just put marker detection ROS package in your workspace. Jump to Option 2.
+
+# Option 1
 cd $FRCN
 ./tools/my_tools/ros_package/ros.sh
 
-# If you have created a ROS workspace and you can just put marker detection ROS package in the workspace. 
+# Option 2
 # Let's call the workspace as $ROS_ws
 cd $FRCN
 cp -r ./tools/my_tools/ros_package/marker_detection/ $ROS_ws/src/
