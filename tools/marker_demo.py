@@ -29,12 +29,6 @@ import re
 CLASSES = ('__background__',
            'marker_0')
 
-NETS = {'vgg16': ('VGG16',
-                  'VGG16_faster_rcnn_final.caffemodel'),
-        'zf': ('ZF',
-                  'ZF_faster_rcnn_final.caffemodel')}
-
-
 def vis_detections(im, class_name, dets, thresh=0.5):
     """Draw detected bounding boxes."""
     inds = np.where(dets[:, -1] >= thresh)[0]
@@ -83,7 +77,7 @@ def demo(net, image_name):
            '{:d} object proposals').format(timer.total_time, boxes.shape[0])
 
     # Visualize detections for each class
-    CONF_THRESH = 0.8
+    CONF_THRESH = 0.5
     NMS_THRESH = 0.3
     for cls_ind, cls in enumerate(CLASSES[1:]):
         cls_ind += 1 # because we skipped background
@@ -93,9 +87,6 @@ def demo(net, image_name):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]                
-        # print "debug------------------"
-        # print cls_ind
-        # print dets[0]
         vis_detections(im, cls, dets, thresh=CONF_THRESH)
         inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
     if len(inds) == 0:
@@ -123,13 +114,6 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    # prototxt = os.path.join(cfg.MODELS_DIR, NETS[args.demo_net][0],
-    #                         'faster_rcnn_alt_opt', 'faster_rcnn_test.pt')
-    # caffemodel = os.path.join(cfg.DATA_DIR, 'faster_rcnn_models',
-    #                           NETS[args.demo_net][1])
-
-    # prototxt = os.path.join(cfg.MODELS_DIR, NETS[args.demo_net][0],
-    #                         'faster_rcnn_end2end', 'test.prototxt')
     prototxt = "./models/marker/test.prototxt"
     caffemodel = "./output/marker/train/zf_faster_rcnn_marker_iter_50000.caffemodel"
 
@@ -154,7 +138,7 @@ if __name__ == '__main__':
 
     # get directory of imagenet
     current_dir = os.getcwd()
-    test_dir = current_dir + "/data/demo/indoor/"
+    test_dir = current_dir + "/data/demo/"
     im_names = os.listdir(test_dir)
     for i in xrange(len(im_names)):
         im_names[i] = test_dir + im_names[i]

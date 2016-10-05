@@ -1,5 +1,6 @@
 # Read inputs
 GPU_ID=$1
+ITERS=$2
 
 # Update solver.prototxt
 echo "Updating solver..."
@@ -78,4 +79,4 @@ echo "Start final training..."
 	--imdb marker_train \
 	--cfg experiments/cfgs/config.yml \
 	--solver models/marker/solver.prototxt \
-	--iters 50000
+	--iters $ITERS
