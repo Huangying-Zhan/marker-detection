@@ -1,9 +1,4 @@
-2### Summary
-
-To be completed
-5.2
-part 6
-imgs
+### Summary
 
 
 This repository contains an universal marker detection algorithm. The algorithm is developed based on [Faster R-CNN](http://arxiv.org/abs/1506.01497) which was published in NIPS 2015. Given a single marker image, the algorithm is able to train a marker detector which is robust to various cases, including different marker transformation (rotation, occlusion, leaning) and also change in brightness of environment. 
@@ -120,7 +115,7 @@ tar xzf marker_raw_data.tar.gz
 
 Now, you have to prepare your marker image. Actually, this program supports multiple markers. You just need to put your images in the corresponding folder. Here is an example of marker image.
 
-![img](marker image example)
+![marker_example](https://cloud.githubusercontent.com/assets/13748721/19136767/950050aa-8ba1-11e6-9aff-dcbf8d421cb3.png)
 
 ```Shell
 # Suppose the image is called "marker_0.png"
@@ -133,7 +128,7 @@ Make sure you **don't put irrelevant files in the folder**! The program automati
 
 Now, we can build our marker dataset based on the raw dataset downloaded in Part 3.1. Personally, I consider this part is the most important part of the whole program. The variety, including both quality and quantity, of the dataset determines the performance of final marker detector. The idea is that, suppose your dataset consists only a single brightness, the detector may not be able to detect markers in darker or brighter environments. Therefore, the construction of the marker dataset should be considered in depth. If you are just using it as a tool, you can use the following script and jump to Part 4.
 
-![img](duplicate example, 1 to 5 to modified 5)
+![dataset_construction_example](https://cloud.githubusercontent.com/assets/13748721/19136792/d39f88f8-8ba1-11e6-8fc1-5471c6328f2b.png)
 
 ```Shell
 cd $FRCN
@@ -474,13 +469,11 @@ Currently, this program is using an unified framework to construct dataset and t
 
 ##### Marker image transformation
 
+![dataset_construction_example](https://cloud.githubusercontent.com/assets/13748721/19136792/d39f88f8-8ba1-11e6-8fc1-5471c6328f2b.png)
+
 At the begining of the whole project, there is only one marker image. I just resize the marker image according to size of bounding boxes and directly replace the region by the marker image. In other words, the images in whole dataset only used same marker image inside object regions.
 
-![img](key same marker to some imgs)
-
 However, a problem is revealed at testing phase. The following photos are not able to be found out by the detector even they are clearly recognized by human beings.
-
-![imgs](rotation, shear images)
 
 From this observation, the possible reason might be that the dataset only consists single type of the marker image. The variety is not enough to train a detector to handle various cases. Therefore, a data augmentation algorithm is introduced to handle such cases. The image augmentor is able to transform an image with various options (all are random), including,
 
@@ -496,7 +489,7 @@ After applying these random transformation on marker image before pasting on obj
 
 However, there is another new issue I encoutered after transformation, which are images with different brightness. The various brightness might be caused by camera exporsure time or the environment itself. However, here are some failed examples. 
 
-![imgs](dark and over exposure images)
+![failed_example](https://cloud.githubusercontent.com/assets/13748721/19136893/88b58efe-8ba2-11e6-8ade-8f62828cb981.png)
 
 The first possible solution I came out is similar to marker image transformation. Tune the brightness of marker images and put the new markers on original object regions. This method sometimes can handle this issue but the result is unstable. Generally, the image should has similar brightness anywhere in the image. The whole brightness should be smooth rather than sudden change in certain regions (marker image region). After that, I guessed that the reason might not be the marker image itself but the whole image. The detector is not able to find out the marker from an image/environment with unseen brightness rather than the detector is not able to recognize the marker with various brightness. Therefore, the brightness of whole image of all images in the dataset is tuned randomly rather than tuning the brightness of marker itself only. This idea finally made the detector becoming very robust in various cases.
 
