@@ -440,10 +440,13 @@ __C.TEST.MAX_SIZE = 400
 Moreover, there are some files need to be updated to disable GPU related functions.
 
 ```Python
-# $FRCN/lib/faster_rcnn/config.py
+# $FRCN/lib/fast_rcnn/config.py
 __C.USE_GPU_NMS = True -> __C.USE_GPU_NMS = False
+# $FRCN/lib/fast_rcnn/nms_wrapper.py, comment the following line
+# from nms.gpu_nms import gpu_nms
 # $FRCN/tools/test_net.py
 caffe.set_mode_gpu() -> caffe.set_mode_cpu()
+
 ```
 
 ### Part 8. Marker detection: experience
@@ -578,6 +581,8 @@ While using this program for applications, there is an important parameter in te
     __C.USE_GPU_NMS = True -> __C.USE_GPU_NMS = False
     # $FRCN/tools/test_net.py
     caffe.set_mode_gpu() -> caffe.set_mode_cpu()
+    # $FRCN/lib/fast_rcnn/nms_wrapper.py, comment the following line
+    # from nms.gpu_nms import gpu_nms
     ```
     
 9. Python ROS: No module named xxx
