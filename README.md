@@ -279,7 +279,6 @@ At the end , you will get some trained models at this directory, `$FRCN/output/m
 If you wish to know more about training in Caffe, here provides more details.
 Basically, we need to prepare a prototxt (defining network structure), a prototxt defining hyper-paremeters (e.g. learning rate, learning policy), a configuration file (config.xml) and a pre-trained model (.caffemodel) for network parameter initialization. For the details of whole workflow of py-faster-rcnn, you may wish to visit my [Detection: Faster R-CNN](https://huangying-zhan.github.io/2016/09/22/detection-faster-rcnn.html) post to know more details. The post includes the workflow behind py-faster-rcnn and an example of basketball detection. Actually the idea behind the example is similar to marker detection.
 
-
 ### Part 5. Marker detection: testing
 
 In this part, we will conduct a testing on our trained model. As mentioned before, we have 80% of the dataset as training set while remaining as validation set. In this testing, we can use the validation set to test the performance of our trained model. The performance is reflected by mAP (mean Average Precision). However, our validation set is **not a natural** dataset since the marker images are digitally-altered (photoshopped). The validation set might not indicate the actual performance.
@@ -593,16 +592,22 @@ While using this program for applications, there is an important parameter in te
     caffe.set_mode_gpu() -> caffe.set_mode_cpu()
     ```
     
-9. No module named em
-	
-		pip install empy
-
-10. No module named rospkg
-
-	```
+9. Python ROS: No module named xxx
+    
+	```Shell
+    # No module named rospkg
     git clone git://github.com/ros/rospkg.git 
     cd rospkg
     python setup.py install --user
+    
+    # No module named em
+    pip install empy
+    
+    # No module named catkin_pkg
+	pip install catkin_pkg
+
+	# No module named rosdep2.rospack
+	pip install rosdep
     ```
     
 11. ImprotError: libglog.so.0: cannot open shared object file: No such file or directory
