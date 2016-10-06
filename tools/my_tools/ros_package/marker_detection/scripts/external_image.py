@@ -26,7 +26,7 @@ def talker():
     pub = rospy.Publisher('marker_detection_image', Image, queue_size=10)
     rospy.init_node('external_image', anonymous=True)
     rate = rospy.Rate(0.1) # 10hz
-    img_path = "/home/shupeng/deepLearning/marker-detection/data/demo/indoor/test.png"
+    img_path = "../data/demo/indoor/test.png"
     while not rospy.is_shutdown():
         print "Reading image..."
         cv_image = cv2.imread(img_path)
