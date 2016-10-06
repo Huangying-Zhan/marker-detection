@@ -102,9 +102,6 @@ def parse_args():
     parser.add_argument('--cpu', dest='cpu_mode',
                         help='Use CPU mode (overrides --gpu)',
                         action='store_true')
-    parser.add_argument('--net', dest='demo_net', help='Network to use [vgg16]',
-                        choices=NETS.keys(), default='zf')
-
     args = parser.parse_args()
 
     return args
@@ -115,7 +112,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     prototxt = "./models/marker/test.prototxt"
-    caffemodel = "./output/marker/train/zf_faster_rcnn_marker_iter_50000.caffemodel"
+    caffemodel = "./output/marker/train/zf_faster_rcnn_marker_iter_100000.caffemodel"
 
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.\nDid you run ./data/script/'
