@@ -591,7 +591,7 @@ While using this program for applications, there is an important parameter in te
     
 6. No module named Cython.Distuils
 	
-    Install Anaconda can solve problem
+    Install Anaconda can solve problem. Remember to re-start a new terminal after installation of Anaconda.
    
 7. No module named Cython.Distuils
 
