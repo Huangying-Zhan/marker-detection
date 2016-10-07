@@ -30,14 +30,13 @@ def init_path():
 
 init_path()
 
-
-
 """import neccesary libraries """
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect
 from fast_rcnn.nms_wrapper import nms
 from utils.timer import Timer
 import matplotlib.pyplot as plt
+# from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import numpy as np
 import caffe, os, sys, cv2
 import re
@@ -45,8 +44,10 @@ import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import shutil
+from marker_detection.msg import pre_detection as pre_det_msg
 from marker_detection.msg import marker_detection_result as md_result
 from marker_detection.msg import bbox as bbox_msg
+
 
 ros_root = os.getcwd()
 FRCN_root = ros_root + "/../"
@@ -67,16 +68,18 @@ else:
 def vis_detections(im, class_name, dets, thresh=0.5):
     """Draw detected bounding boxes."""
     inds = np.where(dets[:, -1] >= thresh)[0]
-    
-    num_saved_img = len(os.listdir(saved_img_path))
 
     # Case that nothing detected
+    num_saved_img = len(os.listdir(saved_img_path))
     if len(inds) == 0:
         cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", im)
+        # publish image message
+        image_talker(im)
         return
 
     im = im[:, :, (2, 1, 0)]
     fig, ax = plt.subplots(figsize=(12, 12))
+    # canvas = FigureCanvas(fig)
     ax.imshow(im, aspect='equal')
     for i in inds:
         bbox = dets[i, :4]
@@ -102,6 +105,12 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     plt.draw()
     plt.savefig(saved_img_path + str(num_saved_img) + ".png")
     plt.close()
+    # publish image message
+    img = cv2.imread(saved_img_path + str(num_saved_img) + ".png")
+    image_talker(img)
+
+
+    
  
 
 def detection(net, im):
@@ -112,8 +121,7 @@ def detection(net, im):
     timer.tic()
     scores, boxes = im_detect(net, im)
     timer.toc()
-    print ('Detection took {:.3f}s for '
-           '{:d} object proposals').format(timer.total_time, boxes.shape[0])
+    print ('Detection took {:.3f}s for {:d} object proposals').format(timer.total_time, boxes.shape[0])
 
     # Visualize detections for each class
     CONF_THRESH = 0.8
@@ -130,9 +138,9 @@ def detection(net, im):
         inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
     return dets[inds]
 
-# ====================== result publisher =================
-def talker(dets):
-    pub = rospy.Publisher('marker_detection_result', md_result, queue_size=10)
+# ====================== numerical result publisher =================
+def num_talker(dets):
+    pub = rospy.Publisher('marker_detection_num_result', md_result, queue_size=10)
     # Obtaining detection result
     msg_to_send = md_result()
     if len(dets) != 0:
@@ -145,14 +153,22 @@ def talker(dets):
             bboxes_to_send.append(bbox_msg(box))
         msg_to_send.bboxes = bboxes_to_send
     pub.publish(msg_to_send)
-    print "Publishing result completed!"
+    print "Published numerical result!"
+
+# ====================== image result publisher =================
+def image_talker(cv_image):
+    pub = rospy.Publisher('marker_detection_image_result', Image, queue_size=10)
+    # Obtaining detection result
+    msg_to_send = bridge.cv2_to_imgmsg(cv_image, encoding="passthrough")
+    pub.publish(msg_to_send)
+    print "Published image result!"
 
 # ==================== image subscriber ==========================
 # Instantiate CvBridge
 bridge = CvBridge()
 
-def image_callback(msg):
-    print("Received an image!")
+def pre_detection_callback(msg):
+    print("Received a message!")
     # cpu mode
     caffe.set_mode_cpu()
     # gpu mode
@@ -161,11 +177,14 @@ def image_callback(msg):
     # cfg.GPU_ID = args.gpu_id
     try:
         # Convert your ROS Image message to OpenCV2
-        cv2_img = bridge.imgmsg_to_cv2(msg, "8UC3")
-        dets = detection(net,cv2_img)
-        print "detection completed!"
-        # Publish result
-        talker(dets)
+        detection_signal = msg.detection_signal
+        cv2_img = bridge.imgmsg_to_cv2(msg.camera_image, "8UC3")
+        if detection_signal:
+            print("Start detection!")
+            dets = detection(net,cv2_img)
+            # Publish result
+            num_talker(dets)
+            print "Detection completed!\n\n"
     except CvBridgeError, e:
         print(e)
 
@@ -192,9 +211,9 @@ if __name__ == '__main__':
     # Setup ROS
     rospy.init_node('image_listener')
     # Define your image topic
-    topic = "marker_detection_image"
+    topic = "pre_marker_detection"
     # Set up your subscriber and define its callback
-    rospy.Subscriber(topic, Image, image_callback)
+    rospy.Subscriber(topic, pre_det_msg, pre_detection_callback)
     # Spin until ctrl + c
 
     rospy.spin()
