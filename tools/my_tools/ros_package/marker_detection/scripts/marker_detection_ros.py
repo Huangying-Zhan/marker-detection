@@ -101,6 +101,7 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     plt.tight_layout()
     plt.draw()
     plt.savefig(saved_img_path + str(num_saved_img) + ".png")
+    plt.close()
  
 
 def detection(net, im):
