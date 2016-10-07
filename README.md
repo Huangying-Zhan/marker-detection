@@ -341,7 +341,7 @@ source devel/setup.bash
 rosrun marker_detection external_result.py
 ```
 
-#### `marker_detection_ros.py`
+#### marker_detection_ros.py
 
 ##### Function
 
