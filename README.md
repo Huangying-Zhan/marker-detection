@@ -314,6 +314,11 @@ Put the model at `$FRCN/output/marker/train/ros/`.
 ***CPU mode issue!***
 
 ```Shell
+# Before creating ROS package, it is suggested to install the following Python packages first since the marker detection ROS package is developed in Python.
+pip install empy
+pip install catkin_pkg
+pip install rosdep
+
 # Create a new ROS workspace for this marker detection. 
 cd $FRCN
 ./tools/my_tools/ros_package/ros.sh
@@ -335,6 +340,29 @@ rosrun marker_detection external_image.py
 source devel/setup.bash
 rosrun marker_detection external_result.py
 ```
+
+#### marker_detection_ros.py
+
+##### Function
+
+`marker_detection_ros.py` subscribes an image topic message and perform detection after receiving the message. After detection, it publishes a topic message regarding the detection result. Moreover, for each received image, the resulted image is saved at `$FRCN/catkin_ws/src/marker_detection/detected_img`. This folder will be **cleared for new images** when new detection task begins.
+
+##### Topic messages
+
+Concerning the topic messages subscribed and published by the marker_detection_ros.py, the messages have the following format.
+
+```Python
+# As an image subscriber, it subscribes the standard Image format in sensro_msgs.msg.
+# As a detection result publisher, it releases 3 types of detection result
+- bool marker_detected # tells whether a marker is detected or not
+- float32[] prob  	 # tells the confidence with the detected result, ranging from 0 to 1
+- bbox[] bboxes		 # tells the coordinate of top-left corner and bottom-right corner of detected bounding box
+
+# bbox[] is a self-defined message. It has the following message format.
+- int32[4] bbox # The 4 integers indicate [row,col] of top-left corner and [row,col] of bottom-right corner. 
+
+```
+
 
 ### Part 7. Marker detection: CPU mode issues
 
@@ -568,7 +596,7 @@ While using this program for applications, there is an important parameter in te
     
 6. No module named Cython.Distuils
 	
-    Install Anaconda can solve problem
+    Install Anaconda can solve problem. Remember to re-start a new terminal after installation of Anaconda.
    
 7. No module named Cython.Distuils
 
