@@ -345,18 +345,30 @@ rosrun marker_detection external_result.py
 
 ##### Function
 
-`marker_detection_ros.py` subscribes an image topic message and perform detection after receiving the message. After detection, it publishes a topic message regarding the detection result. Moreover, for each received image, the resulted image is saved at `$FRCN/catkin_ws/src/marker_detection/detected_img`. This folder will be **cleared for new images** when new detection task begins.
+`marker_detection_ros.py` subscribes a message which includes a boolean signal telling the package to perform detection or not and also an image. If the singal is true, it starts detection after receiving the message. After detection, it publishes a topic message regarding the detection result and also an image message. The image message visualize the detection result if a marker is detected. Otherwise, it just return the original image. Moreover, for each received image, the resulted image is saved at `$FRCN/catkin_ws/src/marker_detection/detected_img`. This folder will be **cleared** when new detection package starts again.
 
 ##### Topic messages
 
 Concerning the topic messages subscribed and published by the marker_detection_ros.py, the messages have the following format.
 
 ```Python
-# As an image subscriber, it subscribes the standard Image format in sensro_msgs.msg.
-# As a detection result publisher, it releases 3 types of detection result
+# As an image subscriber, it subscribes a topic named "pre_marker_detection', which includes a boolean signal and a standard Image format in sensro_msgs.msg
+# Topic: pre_marker_detection
+- bool detection_signal
+- Image camera_image
+
+# As a detection result publisher, it publishes 2 topics.
+# Topic 1: "marker_detection_num_result"
 - bool marker_detected # tells whether a marker is detected or not
 - float32[] prob  	 # tells the confidence with the detected result, ranging from 0 to 1
 - bbox[] bboxes		 # tells the coordinate of top-left corner and bottom-right corner of detected bounding box
+
+# bbox[] is a self-defined message. It has the following message format.
+- int32[4] bbox # The 4 integers indicate [row,col] of top-left corner and [row,col] of bottom-right corner. 
+ 
+# Topic 2: "marker_detection_image_result"
+- sensor_msgs/Image marker_detection_image_result
+
 
 # bbox[] is a self-defined message. It has the following message format.
 - int32[4] bbox # The 4 integers indicate [row,col] of top-left corner and [row,col] of bottom-right corner. 
@@ -434,17 +446,23 @@ Basically, training is not operated in CPU mode. However, if the ultimate goal f
 __C.TRAIN.SCALES = (600,)
 __C.TRAIN.MAX_SIZE = 1000
 # These two values limit the minimum size of an image's shortest side and longest side's maximum size. 
-# The minimum suggested values for this marker detection algorithm in CPU mode is that,
+# The minimum suggested values for this marker detection algorithm in CPU mode is the following setup.
 __C.TRAIN.SCALES = (200,)
 __C.TRAIN.MAX_SIZE = 400
-# However, we should also update the scale in testing phase.
+# We should also update the scale in testing phase.
 __C.TEST.SCALES = (200,)
 __C.TEST.MAX_SIZE = 400
+
 
 # Reduce number of bounding boxes in testing phase
 # This value indicates the number of proposals you are going to classify as marker or not at the end. The less the faster.
 __C.TEST.RPN_POST_NMS_TOP_N = 300
 ```
+
+Concerning the image size, it should be customized according to your requirement, especially the time requirement. For example, suppose you have a time requirement: detection must be completed within 1 second. You should adjust the test scale and proposal number to meet the time requirement first. Then, you can set the TRAIN.SCALES as the one meet the time requirement. 
+
+For proposal number, it can be set according to your application. Suppose you have only one marker to be detected, the proposal number can be set to 10. However, if there are at most 10 markers appear at an image. you should set the proposal number to a higher value! 
+
 
 ##### Part 5.2. Test images
 
