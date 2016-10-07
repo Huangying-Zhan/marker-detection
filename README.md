@@ -314,6 +314,11 @@ Put the model at `$FRCN/output/marker/train/ros/`.
 ***CPU mode issue!***
 
 ```Shell
+# Before creating ROS package, it is suggested to install the following Python packages first since the marker detection ROS package is developed in Python.
+pip install empy
+pip install catkin_pkg
+pip install rosdep
+
 # Create a new ROS workspace for this marker detection. 
 cd $FRCN
 ./tools/my_tools/ros_package/ros.sh
