@@ -137,12 +137,13 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
     # Case that nothing detected
     num_saved_img = len(os.listdir(saved_img_path))
     if len(inds) == 0:
-        # cv_im = resize_CV_image(cv_im, 300)
-        cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", cv_im)
+        cv_im = resize_CV_image(cv_im, 300)
+        # cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", cv_im)
         # publish image message
         image_talker(cv_im)
         return
 
+    print "Marker detected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     # change from OpenCV format to PIL Image format
     array_im = cv_im[:, :, (2, 1, 0)]
     PIL_im = PIL_Image.fromarray(array_im)
@@ -159,7 +160,7 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
         draw.text((bbox[:2]), '{:s}: {:.3f}'.format(class_name, score),(0,0,255), font = font)
         draw = ImageDraw.Draw(PIL_im)
     # Save locally
-    # PIL_im = resize_PIL_image(PIL_im,300)
+    PIL_im = resize_PIL_image(PIL_im,300)
     # PIL_im.save(saved_img_path + str(num_saved_img) + ".png")
     # Convert im back to OpenCV format for publishing purpose
     cv_im = np.asarray(PIL_im)[:, :, (2, 1, 0)]
@@ -194,7 +195,7 @@ def detection(net, im):
 
 # ====================== numerical result publisher =================
 def num_talker(dets):
-    pub = rospy.Publisher('marker_detection_num_result', md_result, queue_size=10)
+    pub = rospy.Publisher('detection_num_result', md_result, queue_size=1)
     # Obtaining detection result
     msg_to_send = md_result()
     if len(dets) != 0:
@@ -211,7 +212,7 @@ def num_talker(dets):
 
 # ====================== image result publisher =================
 def image_talker(cv_image):
-    pub = rospy.Publisher('marker_detection_image_result', Image, queue_size=10)
+    pub = rospy.Publisher('detection_image_result', Image, queue_size=1)
     # Obtaining detection result
     msg_to_send = bridge.cv2_to_imgmsg(cv_image, encoding="passthrough")
     pub.publish(msg_to_send)
