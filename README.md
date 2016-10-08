@@ -352,12 +352,14 @@ rosrun marker_detection external_result.py
 Concerning the topic messages subscribed and published by the marker_detection_ros.py, the messages have the following format.
 
 ```Python
-# As an image subscriber, it subscribes a topic named "pre_marker_detection', which includes a boolean signal and a standard Image format in sensro_msgs.msg
-# Topic: pre_marker_detection
+# As an image subscriber, it subscribes two topics. First one is a signal tells the algorithm to start detection or not. If it is true, it starts detection on another subscribed topic, input_image.
+# Topic1: detection_signal. This message tells the program to start detection or not.
 - bool detection_signal
-- Image camera_image
 
-# As a detection result publisher, it publishes 2 topics.
+# Topic2: input_image. This message is the image input to the detection algorithm.
+- sensor_msgs/Image detection_image
+
+# As a detection result publisher, it publishes 2 topics after completion of detection
 # Topic 1: "marker_detection_num_result"
 - bool marker_detected # tells whether a marker is detected or not
 - float32[] prob  	 # tells the confidence with the detected result, ranging from 0 to 1
@@ -367,11 +369,7 @@ Concerning the topic messages subscribed and published by the marker_detection_r
 - int32[4] bbox # The 4 integers indicate [row,col] of top-left corner and [row,col] of bottom-right corner. 
  
 # Topic 2: "marker_detection_image_result"
-- sensor_msgs/Image marker_detection_image_result
-
-
-# bbox[] is a self-defined message. It has the following message format.
-- int32[4] bbox # The 4 integers indicate [row,col] of top-left corner and [row,col] of bottom-right corner. 
+- sensor_msgs/Image detection_image_result
 
 ```
 
