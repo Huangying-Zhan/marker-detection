@@ -32,12 +32,12 @@ import os.path as osp
 import cv2
 
 # Re-make a folder for saved images
-saved_img_path = "./image_result_debug/"
-if osp.exists(saved_img_path):
-    shutil.rmtree(saved_img_path)
-    os.makedirs(saved_img_path)
-else:
-    os.makedirs(saved_img_path)
+# saved_img_path = "./image_result_debug/"
+# if osp.exists(saved_img_path):
+#     shutil.rmtree(saved_img_path)
+#     os.makedirs(saved_img_path)
+# else:
+#     os.makedirs(saved_img_path)
 
 # ====================== result publisher =================
 def num_result_callback(msg):
@@ -67,8 +67,8 @@ if __name__ == '__main__':
     # Setup ROS
     rospy.init_node('result_listener')
     # Set up numerical result subscriber and define its callback
-    rospy.Subscriber("marker_detection_num_result", md_result, num_result_callback)
+    rospy.Subscriber("detection_num_result", md_result, num_result_callback)
     # Set up image result subscriber and define its callback
-    rospy.Subscriber("marker_detection_image_result", Image, image_result_callback)
+    rospy.Subscriber("detection_image_result", Image, image_result_callback)
     # Spin until ctrl + c
     rospy.spin()

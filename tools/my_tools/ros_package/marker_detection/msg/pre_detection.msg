@@ -1,2 +1,0 @@
-sensor_msgs/Image camera_image
-bool detection_signal

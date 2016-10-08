@@ -42,9 +42,9 @@ import caffe, os, sys, cv2
 import re
 import rospy
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
 from cv_bridge import CvBridge, CvBridgeError
 import shutil
-from marker_detection.msg import pre_detection as pre_det_msg
 from marker_detection.msg import marker_detection_result as md_result
 from marker_detection.msg import bbox as bbox_msg
 
@@ -53,7 +53,7 @@ ros_root = os.getcwd()
 FRCN_root = ros_root + "/../"
 
 CLASSES = ('__background__',
-           'marker_0')
+           'marker')
 
 
 # Re-make a folder for saved images
@@ -167,8 +167,12 @@ def image_talker(cv_image):
 # Instantiate CvBridge
 bridge = CvBridge()
 
-def pre_detection_callback(msg):
+def pre_detection_signal_callback(msg):
     print("Received a message!")
+    detection_signal = msg.data
+    rospy.Subscriber("detection_image", Image, pre_detection_image_callback, (detection_signal))
+
+def pre_detection_image_callback(msg, detection_signal):
     # cpu mode
     caffe.set_mode_cpu()
     # gpu mode
@@ -177,9 +181,10 @@ def pre_detection_callback(msg):
     # cfg.GPU_ID = args.gpu_id
     try:
         # Convert your ROS Image message to OpenCV2
-        detection_signal = msg.detection_signal
-        cv2_img = bridge.imgmsg_to_cv2(msg.camera_image, "8UC3")
+        # detection_signal = pre_detection_signal_callback()
         if detection_signal:
+            cv2_img = bridge.imgmsg_to_cv2(msg, "8UC3")
+            # if detection_signal:
             print("Start detection!")
             dets = detection(net,cv2_img)
             # Publish result
@@ -199,7 +204,7 @@ if __name__ == '__main__':
     if len(caffemodel_at_ros) == 1:
         caffemodel = FRCN_root + "output/marker/train/ros/" + caffemodel_at_ros[0]
     else: 
-        print "Unable to read caffemodel. Is there only ONE caffemodel saved at $FRCN/output/marker/train/ros/ ?"
+        print "Reading caffemodel error. Is there only ONE caffemodel saved at $FRCN/output/marker/train/ros/ ?"
 
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.').format(caffemodel))
@@ -209,13 +214,10 @@ if __name__ == '__main__':
     print '\n\nLoaded network {:s}'.format(caffemodel)
 
     # Setup ROS
-    rospy.init_node('image_listener')
-    # Define your image topic
-    topic = "pre_marker_detection"
+    rospy.init_node('marker_detection')
     # Set up your subscriber and define its callback
-    rospy.Subscriber(topic, pre_det_msg, pre_detection_callback)
+    rospy.Subscriber("detection_signal", Bool, pre_detection_signal_callback)
     # Spin until ctrl + c
-
     rospy.spin()
 
 
