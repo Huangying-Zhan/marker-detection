@@ -50,6 +50,7 @@ add_message_files(
   FILES
   marker_detection_result.msg
   bbox.msg
+  pre_detection.msg
 )
 
 ## Generate services in the 'srv' folder

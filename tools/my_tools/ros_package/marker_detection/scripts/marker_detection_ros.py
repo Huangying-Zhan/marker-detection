@@ -51,6 +51,7 @@ import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
 from cv_bridge import CvBridge, CvBridgeError
+from marker_detection.msg import pre_detection as pre_det_msg
 from marker_detection.msg import marker_detection_result as md_result
 from marker_detection.msg import bbox as bbox_msg
 
@@ -116,6 +117,18 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     img = cv2.imread(saved_img_path + str(num_saved_img) + ".png")
     image_talker(img)
 
+def resize_PIL_image(img, basewidth):
+    wpercent = (basewidth / float(img.size[0]))
+    hsize = int((float(img.size[1]) * float(wpercent)))
+    img = img.resize((basewidth, hsize), PIL.Image.ANTIALIAS)
+    return img
+
+def resize_CV_image(img, basewidth):
+    wpercent = (basewidth / float(img.shape[0]))
+    hsize = int((float(img.shape[1]) * float(wpercent)))
+    img = cv2.resize(img, (hsize, basewidth)) 
+    return img
+
 
 def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
     """Draw detected bounding boxes."""
@@ -124,6 +137,7 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
     # Case that nothing detected
     num_saved_img = len(os.listdir(saved_img_path))
     if len(inds) == 0:
+        # cv_im = resize_CV_image(cv_im, 300)
         cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", cv_im)
         # publish image message
         image_talker(cv_im)
@@ -133,7 +147,7 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
     array_im = cv_im[:, :, (2, 1, 0)]
     PIL_im = PIL_Image.fromarray(array_im)
     # Draw bbox, text
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
     for i in inds:
         # Get bbox and score
         bbox = dets[i, :4]
@@ -145,11 +159,12 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
         draw.text((bbox[:2]), '{:s}: {:.3f}'.format(class_name, score),(0,0,255), font = font)
         draw = ImageDraw.Draw(PIL_im)
     # Save locally
-    PIL_im.save(saved_img_path + str(num_saved_img) + ".png")
+    # PIL_im = resize_PIL_image(PIL_im,300)
+    # PIL_im.save(saved_img_path + str(num_saved_img) + ".png")
     # Convert im back to OpenCV format for publishing purpose
     cv_im = np.asarray(PIL_im)[:, :, (2, 1, 0)]
     # publish image message
-    image_talker(cv_im)    
+    image_talker(cv_im)
  
 
 def detection(net, im):
@@ -206,23 +221,17 @@ def image_talker(cv_image):
 # Instantiate CvBridge
 bridge = CvBridge()
 
-def pre_detection_signal_callback(msg):
-    print("Received a message!")
-    detection_signal = msg.data
-    rospy.Subscriber("detection_image", Image, pre_detection_image_callback, (detection_signal))
 
-def pre_detection_image_callback(msg, detection_signal):
+def pre_detection_callback(msg):
     # cpu mode
     caffe.set_mode_cpu()
-    # gpu mode
-    # caffe.set_mode_gpu()
-    # caffe.set_device(args.gpu_id)
-    # cfg.GPU_ID = args.gpu_id
+    # Get detection_signal
+    detection_signal = msg.detection_signal
     try:
         # Convert your ROS Image message to OpenCV2
         # detection_signal = pre_detection_signal_callback()
         if detection_signal:
-            cv2_img = bridge.imgmsg_to_cv2(msg, "8UC3")
+            cv2_img = bridge.imgmsg_to_cv2(msg.detection_image, "8UC3")
             # if detection_signal:
             print("Start detection!")
             timer = Timer()
@@ -260,7 +269,7 @@ if __name__ == '__main__':
     # Setup ROS
     rospy.init_node('marker_detection')
     # Set up your subscriber and define its callback
-    rospy.Subscriber("detection_signal", Bool, pre_detection_signal_callback)
+    rospy.Subscriber("pre_detection", pre_det_msg, pre_detection_callback)
     # Spin until ctrl + c
     rospy.spin()
 

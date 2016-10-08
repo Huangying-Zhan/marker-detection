@@ -29,7 +29,7 @@ import rospy
 from sensor_msgs.msg import Image
 # ROS Image message -> OpenCV2 image converter
 from cv_bridge import CvBridge, CvBridgeError
-from std_msgs.msg import Bool
+from marker_detection.msg import pre_detection as pre_det_msg
 import cv2
 import numpy as np
 # ==================== image subscriber ==========================
@@ -38,23 +38,22 @@ bridge = CvBridge()
 
 def talker():
     # define the publisher
-    pub_signal = rospy.Publisher('detection_signal', Bool, queue_size=10)
-    pub_image = rospy.Publisher('detection_image', Image, queue_size=10)
+    pub = rospy.Publisher('pre_detection', pre_det_msg, queue_size=10)
     # initialize ROS node
     rospy.init_node('pre_detection', anonymous=True)
     # read image
     rate = rospy.Rate(0.5) # 10hz
     img_path = "../data/demo/test.png"
     while not rospy.is_shutdown():
+        msg_to_send = pred_det_msg()
         # Set detection_signal for debugging purpose
-        detection_signal = True
+        msg_to_send.detection_signal = True
         print "Reading image..."
         # Convert image from OpenCV format to sensor_msgs.Image format
         cv_image = cv2.imread(img_path)
-        detection_image = bridge.cv2_to_imgmsg(cv_image, encoding="passthrough")
+        msg_to_send.detection_image = bridge.cv2_to_imgmsg(cv_image, encoding="passthrough")
         # Publish messages
-        pub_signal.publish(detection_signal)
-        pub_image.publish(detection_image)
+        pub.publish(msg_to_send)
         rate.sleep()
 
 

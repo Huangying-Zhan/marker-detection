@@ -1,0 +1,2 @@
+bool detection_signal
+sensor_msgs/Image detection_image
