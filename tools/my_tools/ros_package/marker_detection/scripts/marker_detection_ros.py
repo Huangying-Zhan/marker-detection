@@ -31,22 +31,29 @@ def init_path():
 init_path()
 
 """import neccesary libraries """
+import caffe
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect
 from fast_rcnn.nms_wrapper import nms
 from utils.timer import Timer
-import matplotlib.pyplot as plt
-# from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+# General
 import numpy as np
-import caffe, os, sys, cv2
-import re
+import matplotlib.pyplot as plt
+import cv2
+import shutil
+import PIL 
+from PIL import ImageFont
+from PIL import Image as PIL_Image
+from PIL import ImageDraw
+
+# ROS
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
 from cv_bridge import CvBridge, CvBridgeError
-import shutil
 from marker_detection.msg import marker_detection_result as md_result
 from marker_detection.msg import bbox as bbox_msg
+
 
 
 ros_root = os.getcwd()
@@ -110,7 +117,39 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     image_talker(img)
 
 
-    
+def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
+    """Draw detected bounding boxes."""
+    inds = np.where(dets[:, -1] >= thresh)[0]
+
+    # Case that nothing detected
+    num_saved_img = len(os.listdir(saved_img_path))
+    if len(inds) == 0:
+        cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", cv_im)
+        # publish image message
+        image_talker(cv_im)
+        return
+
+    # change from OpenCV format to PIL Image format
+    array_im = cv_im[:, :, (2, 1, 0)]
+    PIL_im = PIL_Image.fromarray(array_im)
+    # Draw bbox, text
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
+    for i in inds:
+        # Get bbox and score
+        bbox = dets[i, :4]
+        score = dets[i, -1]
+        # Draw bbox and text
+        draw = ImageDraw.Draw(PIL_im)
+        draw.rectangle(bbox, outline = (0,0,255))
+        draw.text((0,0),'{} detections with p({} | box) >= {:.1f}'.format(class_name, class_name,thresh), (255,0,0), font = font)
+        draw.text((bbox[:2]), '{:s}: {:.3f}'.format(class_name, score),(0,0,255), font = font)
+        draw = ImageDraw.Draw(PIL_im)
+    # Save locally
+    PIL_im.save(saved_img_path + str(num_saved_img) + ".png")
+    # Convert im back to OpenCV format for publishing purpose
+    cv_im = np.asarray(PIL_im)[:, :, (2, 1, 0)]
+    # publish image message
+    image_talker(cv_im)    
  
 
 def detection(net, im):
@@ -134,7 +173,7 @@ def detection(net, im):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]                
-        vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        fast_vis_detections(im, cls, dets, thresh=CONF_THRESH)
         inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
     return dets[inds]
 
@@ -163,7 +202,7 @@ def image_talker(cv_image):
     pub.publish(msg_to_send)
     print "Published image result!"
 
-# ==================== image subscriber ==========================
+# ==================== Subscriber ==========================
 # Instantiate CvBridge
 bridge = CvBridge()
 
@@ -186,10 +225,15 @@ def pre_detection_image_callback(msg, detection_signal):
             cv2_img = bridge.imgmsg_to_cv2(msg, "8UC3")
             # if detection_signal:
             print("Start detection!")
+            timer = Timer()
+            timer.tic()
             dets = detection(net,cv2_img)
             # Publish result
             num_talker(dets)
-            print "Detection completed!\n\n"
+            print "Detection completed!"
+            timer.toc()
+            print "Total time: ", timer.total_time
+            print "\n\n"
     except CvBridgeError, e:
         print(e)
 
