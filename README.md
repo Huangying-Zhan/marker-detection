@@ -8,11 +8,13 @@ The basic idea behind this algorithm is that, there are thousands of labeled ima
 In the following instruction, it includes the guideline for **training and testing in GPU mode**, application in ROS framework, my experience with various issues, and errors that may be encountered and the corresponding solution. Please note that, if you train a model in computer A (**GPU mode**) but run the application in computer B (**CPU mode**), you may refer to Part 7 if there is a reminder as this one: ***CPU mode issue!***. The general procedure for this case is as following.
 
 Computer A:
+
 1. Install the program (Part 2)
 2. Prepare training dataset (Part 3)
 3. Training and testing (Part 4,5)
 
 Computer B
+
 1. Install the program (Part 2, 7)
 2. Copy the trained model from Computer A to Computer B
 3. Application with ROS (Part 6)
@@ -94,7 +96,7 @@ For the details of Faster R-CNN installation, you may wish to visit my [Caffe in
 ### Part 3. Marker detection: dataset
 
 #### 3.1. Raw dataset
-As mentioned at the begining, we need a raw dataset to construct a new and larger marker detection dataset. The link for the dataset is [here](https://www.dropbox.com/s/3x2u785ys2eqv3l/marker_raw_data.tar.gz?dl=0).
+As mentioned at the beginning, we need a raw dataset to construct a new and larger marker detection dataset. The link for the dataset is [here](https://www.dropbox.com/s/3x2u785ys2eqv3l/marker_raw_data.tar.gz?dl=0).
 
 ```Shell
 # copy the dataset to correct directory
@@ -198,7 +200,7 @@ Keep in mind that, `img_0_*.JPEG` are totally the same while `img_0_*.JPEG` are 
         |-- img_1_marker_1_1.xml
 ```
 
-Now, after constructing the dataset, we need to use a *.txt* to save the prefix (i.e. without .JPEG and .xml) of the files such that the program can trace back the files in training phase. Moreover, I have separated the dataset into training set (80%) and validation set (20%).
+Now, after constructing the dataset, we need to use a *.txt* to save the prefix (i.e. without .JPEG and .xml) of the files such that the program can trace back the files in training phase. Moreover, I have separated the dataset into training set (80%) and testing set (20%).
 
 ```
 |-- marker_dataset
@@ -260,7 +262,7 @@ Again, the details of the operations can be refered to the source code.
 
 ### Part 4. Marker detection: training
 
-In this part, the training of marker detector will be introduced. Again, if you are just using it as a tool, you can just follow the code below and proceed to next part. After executing these commands, the program will start training of a marker detector. At the end of training, it is expected to have some well-trained models (since we will take snapshots of the model from time to time). However, we just need one of them. The final model should be good enough, assumed that it doesn't overfit the training set. Details can be refer to Part 7.
+In this part, the training of marker detector will be introduced. Again, if you are just using it as a tool, you can just follow the code below and proceed to next part. After executing these commands, the program will start training of a marker detector. At the end of training, it is expected to have some well-trained models (since we will take snapshots of the model from time to time). However, we just need one of them. The final model should be good enough, assumed that it doesn't overfit the training set. Details can be refer to Part 8.
 
 ***CPU mode issue!***
 
@@ -281,11 +283,11 @@ Basically, we need to prepare a prototxt (defining network structure), a prototx
 
 ### Part 5. Marker detection: testing
 
-In this part, we will conduct a testing on our trained model. As mentioned before, we have 80% of the dataset as training set while remaining as validation set. In this testing, we can use the validation set to test the performance of our trained model. The performance is reflected by mAP (mean Average Precision). However, our validation set is **not a natural** dataset since the marker images are digitally-altered (photoshopped). The validation set might not indicate the actual performance.
+In this part, we will conduct a testing on our trained model. As mentioned before, we have 80% of the dataset as training set while remaining as testing set. In this testing, we can use the testing set to test the performance of our trained model. The performance is reflected by mAP (mean Average Precision). However, our testing set is **not a natural** dataset since the marker images are digitally-altered (photoshopped). The testing set might not indicate the actual performance.
 
-In here, we will introduce two testing methods. First one is using validation set; Second one is using new test images and observe the performance manually. Second one is recommended.
+In here, we will introduce two testing methods. First one is using testing set; Second one is using new test images and observe the performance manually. Second one is recommended.
 
-#### 5.1. Validation set
+#### 5.1. Testing set
 
 Run the following command to check the performance.
 
@@ -306,7 +308,7 @@ Run the following command to check the performance.
 
 ### Part 6. Marker detection: application with ROS
 
-In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker in the image if there exists.
+In this part, we will see how to use a trained model for marker detection in application. Basically, you can treat it as a package which equiped with a trained model. If you provide a RGB image, the package is able to return the position of the marker in the image if there exists, and also the confidence of the detected marker.
 
 Suppose you have installed ROS and trained a model for marker detection.
 Put the model at `$FRCN/output/marker/train/ros/`.
@@ -335,17 +337,17 @@ rosrun marker_detection marker_detection_ros.py
 # For debugging, an external image publisher and result subscriber are also implemented.
 # Open a new terminal
 source devel/setup.bash
-rosrun marker_detection external_image.py
+rosrun marker_detection pre_detection.py
 # Open a new terminal
 source devel/setup.bash
-rosrun marker_detection external_result.py
+rosrun marker_detection post_detection.py
 ```
 
 #### marker_detection_ros.py
 
 ##### Function
 
-`marker_detection_ros.py` subscribes a message which includes a boolean signal telling the package to perform detection or not and also an image. If the singal is true, it starts detection after receiving the message. After detection, it publishes a topic message regarding the detection result and also an image message. The image message visualize the detection result if a marker is detected. Otherwise, it just return the original image. Moreover, for each received image, the resulted image is saved at `$FRCN/catkin_ws/src/marker_detection/detected_img`. This folder will be **cleared** when new detection package starts again.
+`marker_detection_ros.py` subscribes a message which includes a boolean signal telling the package to perform detection or not and also an image. If the signal is true, it starts detection after receiving the message. After detection, it publishes two topic messages, including the detection result (numerical and image). The image message visualize the detection result if a marker is detected. Otherwise, it just return the original image. Moreover, it is possible to save detection image result for debugging (default is disabled). For each received image, the resulted image is saved at `$FRCN/catkin_ws/src/marker_detection/detected_img`. This folder will be **cleared** when new detection package starts again.
 
 ##### Topic messages
 
@@ -534,7 +536,7 @@ Therefore, I enlarge the dataset by duplicating original dataset. Finally, this 
 
 #### 8.2. Training and testing tricks
 
-In this part, I would like to share some experience concerning test result observation. One of the drawback of this algorithm is that there is not **natural** validation dataset to evaluate the performance of the detector by a systematic and numerical way, given that you don't provide a manually labelled validation set. Therefore, basically the performance can be only evaluated by observation on some test images without annotation.
+In this part, I would like to share some experience concerning test result observation. One of the drawback of this algorithm is that there is not **natural** testing dataset to evaluate the performance of the detector by a systematic and numerical way, given that you don't provide a manually labelled testing set. Therefore, basically the performance can be only evaluated by observation on some test images without annotation.
 
 By observation on test result, if we observed that the detector is only able to response to pattherns in training set but unable to detect new patterns, this is probably an overfitting problem. Basically it is caused by inadequate dataset (lack of variety). We can enlarge the dataset to solve this issue.
 
