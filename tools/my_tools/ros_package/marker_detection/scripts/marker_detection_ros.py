@@ -137,13 +137,12 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
     # Case that nothing detected
     num_saved_img = len(os.listdir(saved_img_path))
     if len(inds) == 0:
-        cv_im = resize_CV_image(cv_im, 300)
+        # cv_im = resize_CV_image(cv_im, 300)
         # cv2.imwrite(saved_img_path + str(num_saved_img) + ".png", cv_im)
         # publish image message
-        image_talker(cv_im)
-        return
+        # image_talker(cv_im)
+        return cv_im
 
-    print "Marker detected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     # change from OpenCV format to PIL Image format
     array_im = cv_im[:, :, (2, 1, 0)]
     PIL_im = PIL_Image.fromarray(array_im)
@@ -160,12 +159,13 @@ def fast_vis_detections(cv_im, class_name, dets, thresh=0.5):
         draw.text((bbox[:2]), '{:s}: {:.3f}'.format(class_name, score),(0,0,255), font = font)
         draw = ImageDraw.Draw(PIL_im)
     # Save locally
-    PIL_im = resize_PIL_image(PIL_im,300)
+    # PIL_im = resize_PIL_image(PIL_im,300)
     # PIL_im.save(saved_img_path + str(num_saved_img) + ".png")
     # Convert im back to OpenCV format for publishing purpose
     cv_im = np.asarray(PIL_im)[:, :, (2, 1, 0)]
     # publish image message
-    image_talker(cv_im)
+    # image_talker(cv_im)
+    return cv_im
  
 
 def detection(net, im):
@@ -189,9 +189,9 @@ def detection(net, im):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]                
-        fast_vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        cv_im_result = fast_vis_detections(im, cls, dets, thresh=CONF_THRESH)
         inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
-    return dets[inds]
+    return dets[inds], cv_im_result
 
 # ====================== numerical result publisher =================
 def num_talker(dets):
@@ -218,6 +218,25 @@ def image_talker(cv_image):
     pub.publish(msg_to_send)
     print "Published image result!"
 
+# ====================== combined result publisher =================
+def result_talker(dets, cv_image):
+    # Obtaining detection result
+    msg_to_send = md_result()
+    if len(dets) != 0:
+        msg_to_send.marker_detected = True
+        # Convert dets to valid message
+        msg_to_send.prob = dets[:,-1].tolist()
+        bboxes = dets[:,:4].astype(np.int32).tolist()
+        bboxes_to_send = []
+        for box in bboxes:
+            bboxes_to_send.append(bbox_msg(box))
+        msg_to_send.bboxes = bboxes_to_send
+    # image result
+    detection_image_result = bridge.cv2_to_imgmsg(cv_image, encoding="passthrough")
+    msg_to_send.detection_image_result = detection_image_result
+    pub.publish(msg_to_send)
+    print "Published combined (numerical + image) result!"
+
 # ==================== Subscriber ==========================
 # Instantiate CvBridge
 bridge = CvBridge()
@@ -237,9 +256,9 @@ def pre_detection_callback(msg):
             print("Start detection!")
             timer = Timer()
             timer.tic()
-            dets = detection(net,cv2_img)
+            dets, cv_im_result = detection(net,cv2_img)
             # Publish result
-            num_talker(dets)
+            result_talker(dets, cv_im_result)
             print "Detection completed!"
             timer.toc()
             print "Total time: ", timer.total_time
@@ -271,6 +290,8 @@ if __name__ == '__main__':
     rospy.init_node('marker_detection')
     # Set up your subscriber and define its callback
     rospy.Subscriber("pre_detection", pre_det_msg, pre_detection_callback)
+    # set up publisher
+    pub = rospy.Publisher('detection_result', md_result, queue_size=1)
     # Spin until ctrl + c
     rospy.spin()
 
